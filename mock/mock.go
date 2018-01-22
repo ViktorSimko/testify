@@ -511,6 +511,14 @@ func AnythingOfType(t string) AnythingOfTypeArgument {
 	return AnythingOfTypeArgument(t)
 }
 
+// JSONStringArgument is a string that should be treated as JSON in diffs.
+type JSONStringArgument string
+
+// JSONString returns a JSONStringArgument object containing the JSON string.
+func JSONString(jsonString string) JSONStringArgument {
+	return JSONStringArgument(jsonString)
+}
+
 // argumentMatcher performs custom argument matching, returning whether or
 // not the argument is matched by the expectation fixture function.
 type argumentMatcher struct {
@@ -638,8 +646,19 @@ func (args Arguments) Diff(objects []interface{}) (string, int) {
 				output = fmt.Sprintf("%s\t%d: FAIL:  type %s != type %s - %s\n", output, i, expected, reflect.TypeOf(actual).Name(), actual)
 			}
 
-		} else {
+		} else if reflect.TypeOf(expected) == reflect.TypeOf((*JSONStringArgument)(nil)).Elem() {
 
+			// json string checking
+			if assert.JSONStringsAreEqual(string(expected.(JSONStringArgument)), actual.(string)) {
+				// match
+				output = fmt.Sprintf("%s\t%d: PASS:  %s == %s\n", output, i, actual, expected)
+			} else {
+				// not match
+				differences++
+				output = fmt.Sprintf("%s\t%d: FAIL:  %s != %s\n", output, i, actual, expected)
+			}
+
+		} else {
 			// normal checking
 
 			if assert.ObjectsAreEqual(expected, Anything) || assert.ObjectsAreEqual(actual, Anything) || assert.ObjectsAreEqual(actual, expected) {

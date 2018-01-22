@@ -75,6 +75,31 @@ func ObjectsAreEqualValues(expected, actual interface{}) bool {
 	return false
 }
 
+// Converts two JSON strings to objects
+func jsonStringsToObjects(expected, actual string) (interface{}, interface{}, error) {
+	var expectedJSONAsInterface, actualJSONAsInterface interface{}
+
+	if err := json.Unmarshal([]byte(expected), &expectedJSONAsInterface); err != nil {
+		return nil, nil, err
+	}
+
+	if err := json.Unmarshal([]byte(actual), &actualJSONAsInterface); err != nil {
+		return nil, nil, err
+	}
+
+	return  expectedJSONAsInterface, actualJSONAsInterface, nil
+}
+
+// JSONStringsAreEqual determines if two JSON strings are equal
+func JSONStringsAreEqual(expected, actual string) bool {
+	expectedJSON, actualJSON, err := jsonStringsToObjects(expected, actual)
+	if err != nil {
+		return false
+	}
+
+	return ObjectsAreEqual(expectedJSON, actualJSON)
+}
+
 /* CallerInfo is necessary because the assert functions use the testing object
 internally, causing it to print the file:line of the assert method, rather than where
 the problem actually occurred in calling code.*/
@@ -1174,17 +1199,13 @@ func DirExists(t TestingT, path string, msgAndArgs ...interface{}) bool {
 //
 //  assert.JSONEq(t, `{"hello": "world", "foo": "bar"}`, `{"foo": "bar", "hello": "world"}`)
 func JSONEq(t TestingT, expected string, actual string, msgAndArgs ...interface{}) bool {
-	var expectedJSONAsInterface, actualJSONAsInterface interface{}
 
-	if err := json.Unmarshal([]byte(expected), &expectedJSONAsInterface); err != nil {
-		return Fail(t, fmt.Sprintf("Expected value ('%s') is not valid json.\nJSON parsing error: '%s'", expected, err.Error()), msgAndArgs...)
-	}
-
-	if err := json.Unmarshal([]byte(actual), &actualJSONAsInterface); err != nil {
+	expectedJSON, actualJSON, err := jsonStringsToObjects(expected, actual)
+	if err != nil {
 		return Fail(t, fmt.Sprintf("Input ('%s') needs to be valid json.\nJSON parsing error: '%s'", actual, err.Error()), msgAndArgs...)
 	}
 
-	return Equal(t, expectedJSONAsInterface, actualJSONAsInterface, msgAndArgs...)
+	return Equal(t, expectedJSON, actualJSON, msgAndArgs...)
 }
 
 func typeAndKind(v interface{}) (reflect.Type, reflect.Kind) {
