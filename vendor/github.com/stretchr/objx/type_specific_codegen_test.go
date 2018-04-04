@@ -2,7 +2,7 @@ package objx
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"github.com/ViktorSimko/testify/assert"
 	"testing"
 )
 
